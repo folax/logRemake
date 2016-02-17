@@ -88,10 +88,10 @@ void logRemake::readDataFromFile()
         int cnt = 0;    //data starting from second line
         while (!stream.atEnd()) {
             str = stream.readLine();
-            if (cnt > 0) {
-                for (int i(0); i < (str.size() - 11); ++i) //получаем строку
+            if (cnt == 0) {
+                for (int i(0); i < (str.size()); ++i) //получаем строку
                 {
-                    if (str.at(i) == 'A' && (i < str.size() - 15)) //проверяем если начинается с А
+                    if (str.at(i) == 'A' && (i < str.size())) //проверяем если начинается с А
                     {
                         for (int j(0); j < 15; ++j) // проходим вперёд на 15 символов
                         {
@@ -114,7 +114,8 @@ void logRemake::readDataFromFile()
                 }
             }
             qDebug() << data;
-            cnt++;
+            qDebug() << "Size:" << data.size();
+            //cnt++;
         }
     }
     file.close();
