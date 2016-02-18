@@ -3,11 +3,20 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QFile>
-
-
+#include <QPair>
 
 #include "logremake.h"
 
+
+static QStringList temp_wet =
+{
+    "  јAffBж", "НМ°Aљ™BvЙ", "33ЇAffBсбШ", "  ґAНМB—»С", "ffІAНМBпМ",
+    "33ЇA33BЫЬО", "33ЇAffB{¤Т", "  ґAffBЩЙ", "  ёAffBz¤µ", "  A   B0±ў",
+    "НМAffB[›", "  A33B®БЋ", "33—AffB%yЏ", "ffљA  (BVЭБ", "33іAНМ&BXн",
+    "НМёA33Bпн", "33»Aљ™BЮУ", "  АAffBфОъ", "НМњAљ™B-н¬", "33«AНМBВЇЕ",
+    "ffЄAНМBШВ", "  °Aљ™B›№", "љ™±AffB ґ", "33ЇAffB>кё", "љ™ҐA  0Bэ ",
+    "љ™ҐAff.B8Ны", "fffA  <BђN"
+};
 
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
@@ -79,46 +88,58 @@ void logRemake::loadFile()
 
 void logRemake::readDataFromFile()
 {
-    QFile file(filesPath.at(0));
-    if (file.open(QIODevice::ReadOnly)) {
-        QTextStream stream(&file);
-        QString str;
-        QString buffer;
-        QStringList data;
-        int cnt = 0;    //data starting from second line
-        while (!stream.atEnd()) {
-            str = stream.readLine();
-            if (cnt == 0) {
-                for (int i(0); i < (str.size()); ++i) //получаем строку
-                {
-                    if (str.at(i) == 'A' && (i < str.size())) //проверяем если начинается с А
-                    {
-                        for (int j(0); j < 15; ++j) // проходим вперёд на 15 символов
-                        {
-                            if (str.at(i + j).isDigit())
-                            {
-                                buffer += str.at(i + j);
-                            }
-                            else
-                            {
-                                buffer.clear();
-                            }
-                        }
-                        if(buffer.size() == 14)
-                        {
-                            data.push_back(buffer);
-                            buffer.clear();
-                        }
+    //read input data from file
+    QString dataFromFile;
+    QFile inputFile(filesPath.at(0));
+    if  (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        dataFromFile = in.readAll();
+    }
+    inputFile.close();
 
-                    }
+    //start workin with data
+    QString str;
+    QString buffer;
+    QStringList data;
+    int point1 = 0, point2 = 0;
+
+    for (int i(0); i < (dataFromFile.size()); ++i) //  read for matches
+    {
+        if (dataFromFile.at(i) == '2'
+                && dataFromFile.at(i + 1) == '0'
+                && dataFromFile.at(i + 2) == '1'
+                && dataFromFile.at(i + 3) == '4'
+                && (i < dataFromFile.size()))
+        {
+            point1 = i + 1;
+            for (int j(0); j < 14; ++j) // проходим вперёд на 15 символов
+            {
+                if (dataFromFile.at(i + j).isDigit())
+                {
+                    buffer += dataFromFile.at(i + j);
+                }
+                else
+                {
+                    buffer.clear();
                 }
             }
-            qDebug() << data;
-            qDebug() << "Size:" << data.size();
-            //cnt++;
+
+            if(buffer.size() == 14)
+            {
+                point2 = i + 15;    //находим конец даты и сохраняем координаты
+                data.push_back(buffer);
+                buffer.clear();
+                cords.push_back(qMakePair(point1, point2));
+            }
         }
     }
-    file.close();
+    qDebug() << data;
+    qDebug() << "Size:" << data.size();
+    qDebug() << dataFromFile;
+    for (auto k : cords)
+        qDebug() << k;
+
 }
 
 

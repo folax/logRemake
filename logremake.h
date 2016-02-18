@@ -38,6 +38,7 @@ private:
     QStringList filesPath;
     QString m_strLastOpenPath;
 
+    QVector<QPair<int, int>> cords;
 };
 
 #endif // LOGREMAKE_H
