@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QPair>
+#include <QTextCodec>
 
 #include "logremake.h"
 
@@ -17,6 +18,8 @@ static QStringList temp_wet =
     "ffЄAНМBШВ", "  °Aљ™B›№", "љ™±AffB ґ", "33ЇAffB>кё", "љ™ҐA  0Bэ ",
     "љ™ҐAff.B8Ны", "fffA  <BђN"
 };
+
+const char *word = "33ЇAffB>кё";
 
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
@@ -89,14 +92,16 @@ void logRemake::loadFile()
 void logRemake::readDataFromFile()
 {
     //read input data from file
-    QString dataFromFile;
+    QByteArray dataFromFile;
     QFile inputFile(filesPath.at(0));
     if  (inputFile.open(QIODevice::ReadOnly))
     {
-        QTextStream in(&inputFile);
-        dataFromFile = in.readAll();
+
+        dataFromFile = inputFile.readAll();
+
     }
     inputFile.close();
+
 
     //start workin with data
     QString str;
@@ -115,14 +120,14 @@ void logRemake::readDataFromFile()
             point1 = i + 1;
             for (int j(0); j < 14; ++j) // проходим вперёд на 15 символов
             {
-                if (dataFromFile.at(i + j).isDigit())
-                {
+                if(dataFromFile.at(i + j) == '0' || dataFromFile.at(i + j) == '1' || dataFromFile.at(i + j) == '2'
+                        || dataFromFile.at(i + j) == '3' || dataFromFile.at(i + j) == '4' || dataFromFile.at(i + j) == '5'
+                        || dataFromFile.at(i + j) == '6' || dataFromFile.at(i + j) == '7' || dataFromFile.at(i + j) == '8'
+                        || dataFromFile.at(i + j) == '9'
+                        )
                     buffer += dataFromFile.at(i + j);
-                }
                 else
-                {
                     buffer.clear();
-                }
             }
 
             if(buffer.size() == 14)
@@ -134,11 +139,38 @@ void logRemake::readDataFromFile()
             }
         }
     }
-    qDebug() << data;
-    qDebug() << "Size:" << data.size();
+
+    //есть координаты, можем менять данные!
+    int before = 0, after = 0, diff = 0;
+
+    for (int m(0); m < cords.size(); ++m)
+    {
+        before = cords.at(m + 1).first - cords.at(m).second;
+        after = QString("33ЇAffB>кё").size();
+        dataFromFile.remove(cords.at(m).second - 1, before - 2);
+        dataFromFile.insert(cords.at(m).second - 1, QString("33ЇAffB>кё").toUtf8());
+        diff = before - after;
+
+        for (int h = m + 1; h < cords.size(); ++h)
+        {
+            cords[h] = qMakePair(cords.at(h).first + diff, cords.at(h).second + diff);
+        }
+    }
+
+    //    qDebug() << data;
+    //    qDebug() << "Size:" << data.size();
     qDebug() << dataFromFile;
     for (auto k : cords)
         qDebug() << k;
+
+
+
+    //output file
+    QFile outputFile("Log.logp");
+    if(!outputFile.open(QIODevice::WriteOnly))
+        return;
+    outputFile.write(dataFromFile);
+    outputFile.close();
 
 }
 
