@@ -4,7 +4,7 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QPair>
-#include <QTextCodec>
+#include <QApplication>
 
 #include "logremake.h"
 
@@ -91,6 +91,15 @@ void logRemake::loadFile()
 
 void logRemake::readDataFromFile()
 {
+    //read correct data from file
+    QByteArray correctData;
+    QFile correctFile(QApplication::applicationDirPath() + "/data.logp");
+    if(!correctFile.open(QIODevice::ReadOnly))
+        qDebug() << "Can't open correct data file.";
+    else
+        correctData = correctFile.readAll();
+
+
     //read input data from file
     QByteArray dataFromFile;
     QFile inputFile(filesPath.at(0));
@@ -141,27 +150,29 @@ void logRemake::readDataFromFile()
     }
 
     //есть координаты, можем менять данные!
-    int before = 0, after = 0, diff = 0;
+    //int before = 0, after = 0, diff = 0;
 
     for (int m(0); m < cords.size(); ++m)
     {
-        before = cords.at(m + 1).first - cords.at(m).second;
-        after = QString("33ЇAffB>кё").size();
-        dataFromFile.remove(cords.at(m).second - 1, before - 2);
-        dataFromFile.insert(cords.at(m).second - 1, QString("33ЇAffB>кё").toUtf8());
-        diff = before - after;
+        //before = cords.at(m + 1).first - cords.at(m).second;
+        //after = QString("zzzzzzzzzz").size();
+        dataFromFile.remove(cords.at(m).second - 1, 12);
+        dataFromFile.insert(cords.at(m).second - 1, correctData);
 
-        for (int h = m + 1; h < cords.size(); ++h)
-        {
-            cords[h] = qMakePair(cords.at(h).first + diff, cords.at(h).second + diff);
-        }
+        //diff = before - after;
+        //        qDebug() << before;
+//        for (int h = m + 1; h < cords.size(); ++h)
+//        {
+//            cords[h] = qMakePair(cords.at(h).first, cords.at(h).second);
+//        }
     }
 
     //    qDebug() << data;
     //    qDebug() << "Size:" << data.size();
-    qDebug() << dataFromFile;
-    for (auto k : cords)
-        qDebug() << k;
+    //qDebug() << dataFromFile;
+//    for (auto k : cords)
+//        qDebug() << k;
+    qDebug() << correctData;
 
 
 
