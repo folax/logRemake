@@ -97,7 +97,10 @@ void logRemake::readDataFromFile()
     if(!correctFile.open(QIODevice::ReadOnly))
         qDebug() << "Can't open correct data file.";
     else
+    {
         correctData = correctFile.readAll();
+    }
+    qDebug() << "SIZE: " <<correctData.size();
 
 
     //read input data from file
@@ -110,7 +113,6 @@ void logRemake::readDataFromFile()
 
     }
     inputFile.close();
-
 
     //start workin with data
     QString str;
@@ -150,31 +152,18 @@ void logRemake::readDataFromFile()
     }
 
     //есть координаты, можем менять данные!
-    //int before = 0, after = 0, diff = 0;
-
     for (int m(0); m < cords.size(); ++m)
     {
-        //before = cords.at(m + 1).first - cords.at(m).second;
-        //after = QString("zzzzzzzzzz").size();
         dataFromFile.remove(cords.at(m).second - 1, 12);
         dataFromFile.insert(cords.at(m).second - 1, correctData);
-
-        //diff = before - after;
-        //        qDebug() << before;
-//        for (int h = m + 1; h < cords.size(); ++h)
-//        {
-//            cords[h] = qMakePair(cords.at(h).first, cords.at(h).second);
-//        }
     }
 
     //    qDebug() << data;
     //    qDebug() << "Size:" << data.size();
     //qDebug() << dataFromFile;
-//    for (auto k : cords)
-//        qDebug() << k;
-    qDebug() << correctData;
-
-
+    //    for (auto k : cords)
+    //        qDebug() << k;
+    qDebug() << correctData.at(0);
 
     //output file
     QFile outputFile("Log.logp");
@@ -182,7 +171,6 @@ void logRemake::readDataFromFile()
         return;
     outputFile.write(dataFromFile);
     outputFile.close();
-
 }
 
 
