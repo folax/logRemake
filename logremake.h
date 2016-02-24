@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QSettings>
+#include <QProxyStyle>
 
 class QPushButton;
 class QVBoxLayout;
@@ -20,6 +21,7 @@ public:
 public slots:
     void loadFile();
     void readDataFromFile();
+    void saveFileTo();
 
 protected:
     void closeEvent(QCloseEvent *);
@@ -28,17 +30,28 @@ private:
     QSettings m_settings;
 
     QPushButton *m_pBtnLoadFile;
-    QPushButton *m_pBtnReadFile;
-    QPushButton *m_pBtnRemakeFile;
+    QPushButton *m_pBtnDestination;
+    QPushButton *m_pBtnConvertFile;
     QPushButton *m_pBtnClose;
 
     QVBoxLayout *m_pMainLayout;
     QVBoxLayout *m_pBtnLayout;
 
-    QStringList filesPath;
+    QString filePath;
     QString m_strLastOpenPath;
+    QString m_strPathToSaveFile;
 
     QVector<QPair<int, int>> cords;
+};
+
+class newStyle : public QProxyStyle
+{
+    Q_OBJECT
+
+public:
+    newStyle();
+
+    void polish(QPalette& pal)Q_DECL_OVERRIDE;
 };
 
 #endif // LOGREMAKE_H

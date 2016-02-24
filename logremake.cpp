@@ -5,41 +5,33 @@
 #include <QFile>
 #include <QPair>
 #include <QApplication>
+#include <QStyleFactory>
 
 #include "logremake.h"
-
-
-static QStringList temp_wet =
-{
-    "  јAffBж", "НМ°Aљ™BvЙ", "33ЇAffBсбШ", "  ґAНМB—»С", "ffІAНМBпМ",
-    "33ЇA33BЫЬО", "33ЇAffB{¤Т", "  ґAffBЩЙ", "  ёAffBz¤µ", "  A   B0±ў",
-    "НМAffB[›", "  A33B®БЋ", "33—AffB%yЏ", "ffљA  (BVЭБ", "33іAНМ&BXн",
-    "НМёA33Bпн", "33»Aљ™BЮУ", "  АAffBфОъ", "НМњAљ™B-н¬", "33«AНМBВЇЕ",
-    "ffЄAНМBШВ", "  °Aљ™B›№", "љ™±AffB ґ", "33ЇAffB>кё", "љ™ҐA  0Bэ ",
-    "љ™ҐAff.B8Ны", "fffA  <BђN"
-};
-
-const char *word = "33ЇAffB>кё";
 
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
     this->setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint & Qt::WindowMinimized);
-    resize(400, 400);
+    resize(200, 200);
     m_strLastOpenPath = "c:\\";
+    QApplication::setStyle(new newStyle);
+
+    //variables
+    m_strPathToSaveFile = "c:\\";
 
     //buttons
-    m_pBtnLoadFile = new QPushButton("Load file");
-    m_pBtnReadFile = new QPushButton("Read file");
-    m_pBtnRemakeFile = new QPushButton("Remake file");
-    m_pBtnClose = new QPushButton("Close");
-    m_pBtnReadFile->setEnabled(false);
-    m_pBtnRemakeFile->setEnabled(false);
+    m_pBtnLoadFile = new QPushButton(tr("1) Load file"));
+    m_pBtnDestination = new QPushButton(tr("2) Choose destination"));
+    m_pBtnConvertFile = new QPushButton(tr("3) Convert file"));
+    m_pBtnClose = new QPushButton("Close_Exit");
+    m_pBtnConvertFile->setEnabled(false);
+    m_pBtnDestination->setEnabled(false);
 
     //btn layout
     m_pBtnLayout = new QVBoxLayout();
     m_pBtnLayout->addWidget(m_pBtnLoadFile);
-    m_pBtnLayout->addWidget(m_pBtnReadFile);
-    m_pBtnLayout->addWidget(m_pBtnRemakeFile);
+    m_pBtnLayout->addWidget(m_pBtnDestination);
+    m_pBtnLayout->addWidget(m_pBtnConvertFile);
     m_pBtnLayout->addWidget(m_pBtnClose);
 
     //main layout
@@ -49,7 +41,8 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
 
     //connect
     connect(m_pBtnLoadFile, &QPushButton::clicked, this, &logRemake::loadFile);
-    connect(m_pBtnReadFile, &QPushButton::clicked, this, &logRemake::readDataFromFile);
+    connect(m_pBtnDestination, &QPushButton::clicked, this, &logRemake::saveFileTo);
+    connect(m_pBtnConvertFile, &QPushButton::clicked, this, &logRemake::readDataFromFile);
     connect(m_pBtnClose, &QPushButton::clicked, this, &logRemake::close);
     readSettings();
 }
@@ -59,6 +52,7 @@ void logRemake::readSettings()
     m_settings.beginGroup("/logRemakeSettings");
     int nWidth = m_settings.value("/Width", width()).toInt();
     int nHeight = m_settings.value("/Height", height()).toInt();
+    m_strPathToSaveFile = m_settings.value("/LastSaveToFile", "c:\\").toString();
     m_strLastOpenPath = m_settings.value("/LastOpenFilePath", "c:\\").toString();
     resize(nWidth, nHeight);
     m_settings.endGroup();
@@ -69,21 +63,20 @@ void logRemake::writeSettings()
     m_settings.beginGroup("/logRemakeSettings");
     m_settings.setValue("/Width", width());
     m_settings.setValue("/Height", height());
-    if (filesPath.size() > 0) {
-        m_settings.setValue("/LastOpenFilePath", QFileInfo(filesPath.at(0)).filePath());
-    }
+    m_settings.setValue("/LastSaveToFile", m_strPathToSaveFile + "/");
+    m_settings.setValue("/LastOpenFilePath", QFileInfo(filePath).filePath());
     m_settings.endGroup();
 }
 
 void logRemake::loadFile()
 {
-    filesPath = QFileDialog::getOpenFileNames(this,
-                                              QObject::tr("Open LogPro file"),
-                                              m_strLastOpenPath,
-                                              QObject::tr("logp files (*.logp)"));
-    if (!filesPath.isEmpty()) {
-        m_pBtnReadFile->setEnabled(true);
-        m_pBtnRemakeFile->setEnabled(true);
+    filePath = QFileDialog::getOpenFileName(this,
+                                            QObject::tr("Open LogPro file"),
+                                            m_strLastOpenPath,
+                                            QObject::tr("logp files (*.logp)"));
+    if (!filePath.isEmpty()) {
+        m_pBtnConvertFile->setEnabled(true);
+        m_pBtnDestination->setEnabled(true);
     }
     else
         return;
@@ -92,20 +85,34 @@ void logRemake::loadFile()
 void logRemake::readDataFromFile()
 {
     //read correct data from file
-    QByteArray correctData;
+    QVector<QByteArray> correctData;
     QFile correctFile(QApplication::applicationDirPath() + "/data.logp");
     if(!correctFile.open(QIODevice::ReadOnly))
-        qDebug() << "Can't open correct data file.";
-    else
     {
-        correctData = correctFile.readAll();
+        qDebug() << "Can't open correct file!";
+        return;
     }
-    qDebug() << "SIZE: " <<correctData.size();
+    while(!correctFile.atEnd())
+    {
+        correctData.push_back(correctFile.readLine());
+    }
+    for (int i(0); i < correctData.size(); ++i)
+    {
+        if (correctData.at(i).contains("\n") || correctData.at(i).contains("\r"))
+        {
+            correctData[i].replace("\r", "");
+            correctData[i].replace("\n", "");
+        }
 
+    }
+    qDebug() << "Size of vector" << correctData.size();
+    qDebug() << correctData;
+    qDebug() << correctData.at(0).size();
+    correctFile.close();
 
     //read input data from file
     QByteArray dataFromFile;
-    QFile inputFile(filesPath.at(0));
+    QFile inputFile(filePath);
     if  (inputFile.open(QIODevice::ReadOnly))
     {
 
@@ -152,27 +159,29 @@ void logRemake::readDataFromFile()
     }
 
     //есть координаты, можем менять данные!
+    int fileNumber = 0;
     for (int m(0); m < cords.size(); ++m)
     {
+        fileNumber = qrand() % (((correctData.size() - 1) + 1) - 0) + 0;
         dataFromFile.remove(cords.at(m).second - 1, 12);
-        dataFromFile.insert(cords.at(m).second - 1, correctData);
+        dataFromFile.insert(cords.at(m).second - 1, correctData.at(fileNumber));
     }
 
-    //    qDebug() << data;
-    //    qDebug() << "Size:" << data.size();
-    //qDebug() << dataFromFile;
-    //    for (auto k : cords)
-    //        qDebug() << k;
-    qDebug() << correctData.at(0);
-
     //output file
-    QFile outputFile("Log.logp");
+    QFile outputFile(m_strPathToSaveFile + "/" + QFileInfo(filePath).fileName());
     if(!outputFile.open(QIODevice::WriteOnly))
         return;
     outputFile.write(dataFromFile);
     outputFile.close();
 }
 
+void logRemake::saveFileTo()
+{
+    m_strPathToSaveFile = QFileDialog::getExistingDirectory(this,
+                                                            QObject::tr("Directory to save"),
+                                                            m_strLastOpenPath);
+    qDebug() << "Path:" << m_strPathToSaveFile;
+}
 
 void logRemake::closeEvent(QCloseEvent *)
 {
@@ -184,3 +193,24 @@ logRemake::~logRemake()
 
 }
 
+newStyle::newStyle() : QProxyStyle(QStyleFactory::create("Fusion"))
+{
+
+}
+
+void newStyle::polish(QPalette &darkPalette)
+{
+    darkPalette.setColor(QPalette::Window, QColor(53,53,53));
+    darkPalette.setColor(QPalette::WindowText, Qt::white);
+    darkPalette.setColor(QPalette::Base, QColor(25,25,25)); //listWidget color
+    darkPalette.setColor(QPalette::AlternateBase, QColor(53,53,53));
+    darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
+    darkPalette.setColor(QPalette::ToolTipText, Qt::white);
+    darkPalette.setColor(QPalette::Text, QColor(216, 224, 240));
+    darkPalette.setColor(QPalette::Button, QColor(4, 90, 135));
+    darkPalette.setColor(QPalette::ButtonText, Qt::white);
+    darkPalette.setColor(QPalette::BrightText, Qt::red);
+    darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
+    darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+    darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+}

@@ -13,3 +13,9 @@ SOURCES += \
 
 HEADERS += \
     logremake.h
+
+RC_ICONS = /images/appico.ico
+RC_FILE = app.rc
+
+RESOURCES += \
+    res.qrc
