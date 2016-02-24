@@ -6,18 +6,27 @@
 #include <QPair>
 #include <QApplication>
 #include <QStyleFactory>
+#include <QLabel>
 
 #include "logremake.h"
 
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
     this->setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint & Qt::WindowMinimized);
-    resize(200, 200);
+    setFixedHeight(200);
+    resize(200, 181);
     m_strLastOpenPath = "c:\\";
     QApplication::setStyle(new newStyle);
 
     //variables
     m_strPathToSaveFile = "c:\\";
+
+    //label
+    m_pLblCaption = new QLabel(tr("HUATO log remaker"));
+    m_pLblCaption->setAlignment(Qt::AlignCenter);
+    m_pLblFileName = new QLabel(tr(":"));
+    m_pLblFileDestination = new QLabel(tr(":"));
+    m_pLblStatus = new QLabel(tr("Status: "));
 
     //buttons
     m_pBtnLoadFile = new QPushButton(tr("1) Load file"));
@@ -29,10 +38,14 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
 
     //btn layout
     m_pBtnLayout = new QVBoxLayout();
+    m_pBtnLayout->addWidget(m_pLblCaption);
+    m_pBtnLayout->addWidget(m_pLblFileName);
+    m_pBtnLayout->addWidget(m_pLblFileDestination);
     m_pBtnLayout->addWidget(m_pBtnLoadFile);
     m_pBtnLayout->addWidget(m_pBtnDestination);
     m_pBtnLayout->addWidget(m_pBtnConvertFile);
     m_pBtnLayout->addWidget(m_pBtnClose);
+    m_pBtnLayout->addWidget(m_pLblStatus);
 
     //main layout
     m_pMainLayout = new QVBoxLayout(this);
@@ -77,6 +90,8 @@ void logRemake::loadFile()
     if (!filePath.isEmpty()) {
         m_pBtnConvertFile->setEnabled(true);
         m_pBtnDestination->setEnabled(true);
+        m_pLblFileName->setText("Source file: " + QFileInfo(filePath).fileName());
+        m_pLblStatus->setText("Status: file loaded");
     }
     else
         return;
@@ -173,19 +188,25 @@ void logRemake::readDataFromFile()
         return;
     outputFile.write(dataFromFile);
     outputFile.close();
+    m_pLblStatus->setText("Status: FINISHED");
 }
 
 void logRemake::saveFileTo()
 {
     m_strPathToSaveFile = QFileDialog::getExistingDirectory(this,
                                                             QObject::tr("Directory to save"),
-                                                            m_strLastOpenPath);
-    qDebug() << "Path:" << m_strPathToSaveFile;
+                                                            m_strPathToSaveFile);
+    m_pLblFileDestination->setText("Destination: " + m_strPathToSaveFile + "/" + QFileInfo(filePath).fileName());
 }
 
 void logRemake::closeEvent(QCloseEvent *)
 {
     writeSettings();
+}
+
+void logRemake::resizeEvent(QResizeEvent *)
+{
+    qDebug() << "Width:" << height();
 }
 
 logRemake::~logRemake()

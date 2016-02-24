@@ -8,6 +8,7 @@
 class QPushButton;
 class QVBoxLayout;
 class QStringList;
+class QLabel;
 
 class logRemake : public QDialog
 {
@@ -25,6 +26,7 @@ public slots:
 
 protected:
     void closeEvent(QCloseEvent *);
+    void resizeEvent(QResizeEvent *);
 
 private:
     QSettings m_settings;
@@ -40,6 +42,11 @@ private:
     QString filePath;
     QString m_strLastOpenPath;
     QString m_strPathToSaveFile;
+
+    QLabel *m_pLblCaption;
+    QLabel *m_pLblFileName;
+    QLabel *m_pLblFileDestination;
+    QLabel *m_pLblStatus;
 
     QVector<QPair<int, int>> cords;
 };
