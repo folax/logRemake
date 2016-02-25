@@ -189,6 +189,9 @@ void logRemake::readDataFromFile()
     outputFile.write(dataFromFile);
     outputFile.close();
     m_pLblStatus->setText("Status: FINISHED");
+    m_pBtnConvertFile->setEnabled(false);
+    m_pBtnDestination->setEnabled(false);
+    m_pLblFileDestination->setText("Destination: " + m_strPathToSaveFile + "/");
 }
 
 void logRemake::saveFileTo()
@@ -196,7 +199,7 @@ void logRemake::saveFileTo()
     m_strPathToSaveFile = QFileDialog::getExistingDirectory(this,
                                                             QObject::tr("Directory to save"),
                                                             m_strPathToSaveFile);
-    m_pLblFileDestination->setText("Destination: " + m_strPathToSaveFile + "/" + QFileInfo(filePath).fileName());
+    m_pLblFileDestination->setText("Destination: " + m_strPathToSaveFile + "/");
 }
 
 void logRemake::closeEvent(QCloseEvent *)
