@@ -39,7 +39,7 @@ private:
     QVBoxLayout *m_pMainLayout;
     QVBoxLayout *m_pBtnLayout;
 
-    QString filePath;
+    QString m_strFilePath;
     QString m_strLastOpenPath;
     QString m_strPathToSaveFile;
 

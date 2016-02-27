@@ -77,20 +77,20 @@ void logRemake::writeSettings()
     m_settings.setValue("/Width", width());
     m_settings.setValue("/Height", height());
     m_settings.setValue("/LastSaveToFile", m_strPathToSaveFile + "/");
-    m_settings.setValue("/LastOpenFilePath", QFileInfo(filePath).filePath());
+    m_settings.setValue("/LastOpenFilePath", QFileInfo(m_strFilePath).filePath());
     m_settings.endGroup();
 }
 
 void logRemake::loadFile()
 {
-    filePath = QFileDialog::getOpenFileName(this,
+    m_strFilePath = QFileDialog::getOpenFileName(this,
                                             QObject::tr("Open LogPro file"),
                                             m_strLastOpenPath,
                                             QObject::tr("logp files (*.logp)"));
-    if (!filePath.isEmpty()) {
+    if (!m_strFilePath.isEmpty()) {
         m_pBtnConvertFile->setEnabled(true);
         m_pBtnDestination->setEnabled(true);
-        m_pLblFileName->setText("Source file: " + QFileInfo(filePath).fileName());
+        m_pLblFileName->setText("Source file: " + QFileInfo(m_strFilePath).fileName());
         m_pLblStatus->setText("Status: file loaded");
     }
     else
@@ -127,7 +127,7 @@ void logRemake::readDataFromFile()
 
     //read input data from file
     QByteArray dataFromFile;
-    QFile inputFile(filePath);
+    QFile inputFile(m_strFilePath);
     if  (inputFile.open(QIODevice::ReadOnly))
     {
 
@@ -137,21 +137,19 @@ void logRemake::readDataFromFile()
     inputFile.close();
 
     //start workin with data
-    QString str;
     QString buffer;
     QStringList data;
     int point1 = 0, point2 = 0;
-
     for (int i(0); i < (dataFromFile.size()); ++i) //  read for matches
     {
-        if (dataFromFile.at(i) == '2'
-                && dataFromFile.at(i + 1) == '0'
-                && dataFromFile.at(i + 2) == '1'
-                && dataFromFile.at(i + 3) == '4'
-                && (i < dataFromFile.size()))
+        if ((dataFromFile.at(i) == '2' && dataFromFile.at(i + 1) == '0'
+                && dataFromFile.at(i + 2) == '1' && (i < dataFromFile.size()))
+                && (dataFromFile.at(i + 3) == '4' || dataFromFile.at(i + 3) == '5'
+                 || dataFromFile.at(i + 3) == '6' || dataFromFile.at(i + 3) == '7'
+                 || dataFromFile.at(i + 3) == '8' || dataFromFile.at(i + 3) == '9'))
         {
             point1 = i + 1;
-            for (int j(0); j < 14; ++j) // проходим вперёд на 15 символов
+            for (int j(0); j < 14; ++j) // pass ahead by 15 characters
             {
                 if(dataFromFile.at(i + j) == '0' || dataFromFile.at(i + j) == '1' || dataFromFile.at(i + j) == '2'
                         || dataFromFile.at(i + j) == '3' || dataFromFile.at(i + j) == '4' || dataFromFile.at(i + j) == '5'
@@ -165,7 +163,7 @@ void logRemake::readDataFromFile()
 
             if(buffer.size() == 14)
             {
-                point2 = i + 15;    //находим конец даты и сохраняем координаты
+                point2 = i + 15;    //find end of date and save coords
                 data.push_back(buffer);
                 buffer.clear();
                 cords.push_back(qMakePair(point1, point2));
@@ -173,7 +171,7 @@ void logRemake::readDataFromFile()
         }
     }
 
-    //есть координаты, можем менять данные!
+    //have coords, now can edit data
     int fileNumber = 0;
     for (int m(0); m < cords.size(); ++m)
     {
@@ -183,7 +181,7 @@ void logRemake::readDataFromFile()
     }
 
     //output file
-    QFile outputFile(m_strPathToSaveFile + "/" + QFileInfo(filePath).fileName());
+    QFile outputFile(m_strPathToSaveFile + "/" + QFileInfo(m_strFilePath).fileName());
     if(!outputFile.open(QIODevice::WriteOnly))
         return;
     outputFile.write(dataFromFile);
@@ -209,7 +207,8 @@ void logRemake::closeEvent(QCloseEvent *)
 
 void logRemake::resizeEvent(QResizeEvent *)
 {
-    qDebug() << "Width:" << height();
+    qDebug() << "Height:" << height();
+    qDebug() << "Width:" << width();
 }
 
 logRemake::~logRemake()
