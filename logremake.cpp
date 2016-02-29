@@ -84,9 +84,9 @@ void logRemake::writeSettings()
 void logRemake::loadFile()
 {
     m_strFilePath = QFileDialog::getOpenFileName(this,
-                                            QObject::tr("Open LogPro file"),
-                                            m_strLastOpenPath,
-                                            QObject::tr("logp files (*.logp)"));
+                                                 QObject::tr("Open LogPro file"),
+                                                 m_strLastOpenPath,
+                                                 QObject::tr("logp files (*.logp)"));
     if (!m_strFilePath.isEmpty()) {
         m_pBtnConvertFile->setEnabled(true);
         m_pBtnDestination->setEnabled(true);
@@ -143,10 +143,10 @@ void logRemake::readDataFromFile()
     for (int i(0); i < (dataFromFile.size()); ++i) //  read for matches
     {
         if ((dataFromFile.at(i) == '2' && dataFromFile.at(i + 1) == '0'
-                && dataFromFile.at(i + 2) == '1' && (i < dataFromFile.size()))
+             && dataFromFile.at(i + 2) == '1' && (i < dataFromFile.size()))
                 && (dataFromFile.at(i + 3) == '4' || dataFromFile.at(i + 3) == '5'
-                 || dataFromFile.at(i + 3) == '6' || dataFromFile.at(i + 3) == '7'
-                 || dataFromFile.at(i + 3) == '8' || dataFromFile.at(i + 3) == '9'))
+                    || dataFromFile.at(i + 3) == '6' || dataFromFile.at(i + 3) == '7'
+                    || dataFromFile.at(i + 3) == '8' || dataFromFile.at(i + 3) == '9'))
         {
             point1 = i + 1;
             for (int j(0); j < 14; ++j) // pass ahead by 15 characters
@@ -159,17 +159,22 @@ void logRemake::readDataFromFile()
                     buffer += dataFromFile.at(i + j);
                 else
                     buffer.clear();
+
+                if(buffer.size() == 14)
+                {
+                    point2 = i + 15;    //find end of date and save coords
+                    data.push_back(buffer);
+                    buffer.clear();
+                    cords.push_back(qMakePair(point1, point2));
+                }
             }
 
-            if(buffer.size() == 14)
-            {
-                point2 = i + 15;    //find end of date and save coords
-                data.push_back(buffer);
-                buffer.clear();
-                cords.push_back(qMakePair(point1, point2));
-            }
         }
     }
+
+    qDebug() << "Data array size:" << data.size();
+    for (auto i(0); i < data.size(); ++i)
+        qDebug() << data.at(i) << " : " << cords.at(i);
 
     //have coords, now can edit data
     int fileNumber = 0;
