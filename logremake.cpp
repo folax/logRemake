@@ -7,13 +7,15 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QLabel>
+#include <QCheckBox>
+#include <QDir>
 
 #include "logremake.h"
 
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
     this->setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint & Qt::WindowMinimized);
-    setFixedHeight(200);
+    setFixedHeight(252);
     resize(200, 181);
     m_strLastOpenPath = "c:\\";
     QApplication::setStyle(new newStyle);
@@ -33,8 +35,13 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnDestination = new QPushButton(tr("2) Choose destination"));
     m_pBtnConvertFile = new QPushButton(tr("3) Convert file"));
     m_pBtnClose = new QPushButton("Close_Exit");
+    m_pBtnParser = new QPushButton("Parse data from logs!");
     m_pBtnConvertFile->setEnabled(false);
     m_pBtnDestination->setEnabled(false);
+
+    //checkbox
+    m_pCbOption = new QCheckBox("Parse with good data logs");
+    m_pCbOption->setChecked(false);
 
     //btn layout
     m_pBtnLayout = new QVBoxLayout();
@@ -46,6 +53,8 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnLayout->addWidget(m_pBtnConvertFile);
     m_pBtnLayout->addWidget(m_pBtnClose);
     m_pBtnLayout->addWidget(m_pLblStatus);
+    m_pBtnLayout->addWidget(m_pBtnParser);
+    m_pBtnLayout->addWidget(m_pCbOption);
 
     //main layout
     m_pMainLayout = new QVBoxLayout(this);
@@ -56,6 +65,7 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     connect(m_pBtnLoadFile, &QPushButton::clicked, this, &logRemake::loadFile);
     connect(m_pBtnDestination, &QPushButton::clicked, this, &logRemake::saveFileTo);
     connect(m_pBtnConvertFile, &QPushButton::clicked, this, &logRemake::readDataFromFile);
+    connect(m_pBtnParser, &QPushButton::clicked, this, &logRemake::parseDataFromLogs);
     connect(m_pBtnClose, &QPushButton::clicked, this, &logRemake::close);
     readSettings();
 }
@@ -205,6 +215,13 @@ void logRemake::saveFileTo()
     m_pLblFileDestination->setText("Destination: " + m_strPathToSaveFile + "/");
 }
 
+void logRemake::parseDataFromLogs()
+{
+    m_pLp = new logParser(this);
+    m_pLp->setModal(true);
+    m_pLp->show();
+}
+
 void logRemake::closeEvent(QCloseEvent *)
 {
     writeSettings();
@@ -241,4 +258,106 @@ void newStyle::polish(QPalette &darkPalette)
     darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+}
+
+
+logParser::logParser(QWidget *parent) : QDialog(parent)
+{
+    this->setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint & Qt::WindowMinimized);
+    setFixedHeight(200);
+    resize(200, 181);
+    QApplication::setStyle(new newStyle);
+
+    m_pItemsLayout = new QVBoxLayout();
+    //labels
+    m_pLblInfo = new QLabel("                                    Instruction\n"
+                            "1) Create directory goodLogs in same directory where app\n"
+                            "2) Place logs with good data to goodLogs directory\n"
+                            "3) Press CREATE button");
+    m_pLblStatus = new QLabel("Status: ");
+
+    //buttons
+    m_pBtnParseData = new QPushButton("CREATE");
+
+    //layout for items
+    m_pItemsLayout->addWidget(m_pLblInfo);
+    m_pItemsLayout->addWidget(m_pBtnParseData);
+    m_pItemsLayout->addWidget(m_pLblStatus);
+
+    //main widget layout
+    m_pMainLayout = new QVBoxLayout(this);
+    m_pMainLayout->addLayout(m_pItemsLayout);
+    setLayout(m_pMainLayout);
+    connect(m_pBtnParseData, &QPushButton::clicked, this, &logParser::parseDataFromLogs);
+}
+
+logParser::~logParser()
+{
+
+}
+
+void logParser::parseDataFromLogs()
+{
+    //get files paths
+    QDir dir(QApplication::applicationDirPath() + "/goodLogs");
+    QStringList filters;
+    filters << "*.logp";
+    dir.setNameFilters(filters);
+    m_filesList = dir.entryList(QDir::Files);
+
+    QString buffer;
+    QStringList data;
+
+    for(int i(0); i < m_filesList.size(); ++i)
+    {
+        //read input data from file
+        QByteArray dataFromFile;
+        QFile inputFile(QApplication::applicationDirPath() + "/goodLogs/" + m_filesList.at(i));
+        if  (!inputFile.open(QIODevice::ReadOnly))
+        {
+            qDebug() << "Coul'd not open file.";
+            return;
+        }
+        dataFromFile = inputFile.readAll();
+        inputFile.close();
+
+        //data from file processing
+        for(int j(0); j < dataFromFile.size(); ++j)
+        {
+            if ((dataFromFile.at(i) == '2' && dataFromFile.at(i + 1) == '0'
+                 && dataFromFile.at(i + 2) == '1' && (i < dataFromFile.size()))
+                    && (dataFromFile.at(i + 3) == '2' || dataFromFile.at(i + 3) == '3'
+                        || dataFromFile.at(i + 3) == '4' || dataFromFile.at(i + 3) == '5'
+                        || dataFromFile.at(i + 3) == '6' || dataFromFile.at(i + 3) == '7'
+                        || dataFromFile.at(i + 3) == '8' || dataFromFile.at(i + 3) == '9'))
+
+                for (int j(0); j < 14; ++j) // pass ahead by 15 characters
+                {
+                    if(dataFromFile.at(i + j) == '0' || dataFromFile.at(i + j) == '1' || dataFromFile.at(i + j) == '2'
+                            || dataFromFile.at(i + j) == '3' || dataFromFile.at(i + j) == '4' || dataFromFile.at(i + j) == '5'
+                            || dataFromFile.at(i + j) == '6' || dataFromFile.at(i + j) == '7' || dataFromFile.at(i + j) == '8'
+                            || dataFromFile.at(i + j) == '9'
+                            )
+                        buffer += dataFromFile.at(i + j);
+                    else
+                        buffer.clear();
+
+                    if(buffer.size() == 14)
+                    {
+                        data.push_back(buffer);
+                        buffer.clear();
+                    }
+                }
+        }
+    }
+
+    for(int k(0); k < data.size(); ++k)
+        qDebug() << "Data: " << data.at(k);
+
+    //output file
+    QFile outputFile(QApplication::applicationDirPath() + "/" + "parsedData.dat");
+    if(!outputFile.open(QIODevice::WriteOnly))
+        return;
+    outputFile.write(m_baDataToWrite);
+    outputFile.close();
 }
