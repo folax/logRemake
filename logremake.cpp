@@ -9,6 +9,8 @@
 #include <QLabel>
 #include <QCheckBox>
 #include <QDir>
+#include <QMessageBox>
+#include <algorithm>
 
 #include "logremake.h"
 
@@ -40,7 +42,7 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnDestination->setEnabled(false);
 
     //checkbox
-    m_pCbOption = new QCheckBox("Parse with good data logs");
+    m_pCbOption = new QCheckBox("Use parsed data log!");
     m_pCbOption->setChecked(false);
 
     //btn layout
@@ -110,8 +112,18 @@ void logRemake::loadFile()
 void logRemake::readDataFromFile()
 {
     //read correct data from file
+    QString pathToCorrectData;
+    if (m_pCbOption->isChecked())
+    {
+        pathToCorrectData = QApplication::applicationDirPath() + "/parsedData.dat";
+    }
+    else
+    {
+        pathToCorrectData = QApplication::applicationDirPath() + "/data.logp";
+    }
+
     QVector<QByteArray> correctData;
-    QFile correctFile(QApplication::applicationDirPath() + "/data.logp");
+    QFile correctFile(pathToCorrectData);
     if(!correctFile.open(QIODevice::ReadOnly))
     {
         qDebug() << "Can't open correct file!";
@@ -183,16 +195,19 @@ void logRemake::readDataFromFile()
     }
 
     qDebug() << "Data array size:" << data.size();
-    for (auto i(0); i < data.size(); ++i)
-        qDebug() << data.at(i) << " : " << cords.at(i);
+    //    for (auto i(0); i < data.size(); ++i)
+    //        qDebug() << data.at(i) << " : " << cords.at(i);
 
     //have coords, now can edit data
     int fileNumber = 0;
+    int cnt = 0;
     for (int m(0); m < cords.size(); ++m)
     {
-        fileNumber = qrand() % (((correctData.size() - 1) + 1) - 0) + 0;
+        if (cnt % 10 == 0)
+            fileNumber = qrand() % (((correctData.size() - 1) + 1) - 0) + 0;
         dataFromFile.remove(cords.at(m).second - 1, 12);
         dataFromFile.insert(cords.at(m).second - 1, correctData.at(fileNumber));
+        ++cnt;
     }
 
     //output file
@@ -305,8 +320,8 @@ void logParser::parseDataFromLogs()
     dir.setNameFilters(filters);
     m_filesList = dir.entryList(QDir::Files);
 
-    QString buffer;
-    QStringList data;
+    QByteArray buffer;
+    QVector<QByteArray> data;
 
     for(int i(0); i < m_filesList.size(); ++i)
     {
@@ -319,45 +334,70 @@ void logParser::parseDataFromLogs()
             return;
         }
         dataFromFile = inputFile.readAll();
+        qDebug() << "File name: " << inputFile.fileName() << "Data from file size: " << dataFromFile.size();
         inputFile.close();
 
         //data from file processing
         for(int j(0); j < dataFromFile.size(); ++j)
         {
-            if ((dataFromFile.at(i) == '2' && dataFromFile.at(i + 1) == '0'
-                 && dataFromFile.at(i + 2) == '1' && (i < dataFromFile.size()))
-                    && (dataFromFile.at(i + 3) == '2' || dataFromFile.at(i + 3) == '3'
-                        || dataFromFile.at(i + 3) == '4' || dataFromFile.at(i + 3) == '5'
-                        || dataFromFile.at(i + 3) == '6' || dataFromFile.at(i + 3) == '7'
-                        || dataFromFile.at(i + 3) == '8' || dataFromFile.at(i + 3) == '9'))
-
-                for (int j(0); j < 14; ++j) // pass ahead by 15 characters
+            if ((dataFromFile.at(j) == '2' && dataFromFile.at(j + 1) == '0'
+                 && dataFromFile.at(j + 2) == '1' && (j < dataFromFile.size()))
+                    && (dataFromFile.at(j + 3) == '0' || dataFromFile.at(j + 3) == '1'
+                        ||dataFromFile.at(j + 3) == '2' || dataFromFile.at(j + 3) == '3'
+                        || dataFromFile.at(j + 3) == '4' || dataFromFile.at(j + 3) == '5'
+                        || dataFromFile.at(j + 3) == '6' || dataFromFile.at(j + 3) == '7'
+                        || dataFromFile.at(j + 3) == '8' || dataFromFile.at(j + 3) == '9'))
+            {
+                for (int k(0); k < 14; ++k) // pass ahead by 15 characters
                 {
-                    if(dataFromFile.at(i + j) == '0' || dataFromFile.at(i + j) == '1' || dataFromFile.at(i + j) == '2'
-                            || dataFromFile.at(i + j) == '3' || dataFromFile.at(i + j) == '4' || dataFromFile.at(i + j) == '5'
-                            || dataFromFile.at(i + j) == '6' || dataFromFile.at(i + j) == '7' || dataFromFile.at(i + j) == '8'
-                            || dataFromFile.at(i + j) == '9'
+
+                    if(dataFromFile.at(j + k) == '0' || dataFromFile.at(j + k) == '1' || dataFromFile.at(j + k) == '2'
+                            || dataFromFile.at(j + k) == '3' || dataFromFile.at(j + k) == '4' || dataFromFile.at(j + k) == '5'
+                            || dataFromFile.at(j + k) == '6' || dataFromFile.at(j + k) == '7' || dataFromFile.at(j + k) == '8'
+                            || dataFromFile.at(j + k) == '9'
                             )
-                        buffer += dataFromFile.at(i + j);
+                        buffer += dataFromFile.at(j + k);
                     else
                         buffer.clear();
 
                     if(buffer.size() == 14)
                     {
-                        data.push_back(buffer);
+                        buffer.clear();
+                        for (int m(1); m < 13; ++m)
+                        {
+                            buffer += dataFromFile.at(j + k + m);
+                        }
+                        if (buffer.size() == 12 && !buffer.contains("\n") && !buffer.contains("\r"))
+                        {
+                            data.push_back(buffer);
+                        }
                         buffer.clear();
                     }
                 }
-        }
-    }
 
-    for(int k(0); k < data.size(); ++k)
-        qDebug() << "Data: " << data.at(k);
+            }
+        }
+        dataFromFile.clear();
+    }
+    //delete dublicates
+    data.erase(std::unique(data.begin(), data.end()), data.end());
+
+    qDebug() << "Data size: " << data.size();
+    for (int i(0); i < data.size(); ++i)
+        qDebug() << i + 1 << " Data: " << data.at(i);
 
     //output file
     QFile outputFile(QApplication::applicationDirPath() + "/" + "parsedData.dat");
-    if(!outputFile.open(QIODevice::WriteOnly))
+    if(!outputFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        m_pLblStatus->setText(tr("Status: can't open file to write!"));
         return;
-    outputFile.write(m_baDataToWrite);
+    }
+    for(int i(0); i < data.size(); ++i)
+    {
+        outputFile.write(data.at(i));
+        outputFile.write("\n");
+    }
     outputFile.close();
+    m_pLblStatus->setText(tr("Status: parsedData.dat file created!"));
 }
