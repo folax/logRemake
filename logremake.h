@@ -54,8 +54,6 @@ private:
     QLabel *m_pLblFileDestination;
     QLabel *m_pLblStatus;
 
-    QCheckBox *m_pCbOption;
-
     QVector<QPair<int, int>> cords;
     logParser *m_pLp;
 };

@@ -7,7 +7,6 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QLabel>
-#include <QCheckBox>
 #include <QDir>
 #include <QMessageBox>
 #include <algorithm>
@@ -41,10 +40,6 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnConvertFile->setEnabled(false);
     m_pBtnDestination->setEnabled(false);
 
-    //checkbox
-    m_pCbOption = new QCheckBox("Use parsed data log!");
-    m_pCbOption->setChecked(false);
-
     //btn layout
     m_pBtnLayout = new QVBoxLayout();
     m_pBtnLayout->addWidget(m_pLblCaption);
@@ -56,7 +51,6 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnLayout->addWidget(m_pBtnClose);
     m_pBtnLayout->addWidget(m_pLblStatus);
     m_pBtnLayout->addWidget(m_pBtnParser);
-    m_pBtnLayout->addWidget(m_pCbOption);
 
     //main layout
     m_pMainLayout = new QVBoxLayout(this);
@@ -111,19 +105,20 @@ void logRemake::loadFile()
 
 void logRemake::readDataFromFile()
 {
-    //read correct data from file
-    QString pathToCorrectData;
-    if (m_pCbOption->isChecked())
+    //check if file exists
+    QString pathToFile = QApplication::applicationDirPath() + "/parsedData.dat";
+    if (!QFileInfo(pathToFile).exists())
     {
-        pathToCorrectData = QApplication::applicationDirPath() + "/parsedData.dat";
-    }
-    else
-    {
-        pathToCorrectData = QApplication::applicationDirPath() + "/data.logp";
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Not found: parsedData.dat file, press Parse data from logs! first."),
+                             QMessageBox::Ok);
+        m_pLblStatus->setText(tr("Status: parsedData.dat file not found!"));
+        return;
     }
 
+    //read correct data from file
     QVector<QByteArray> correctData;
-    QFile correctFile(pathToCorrectData);
+    QFile correctFile(pathToFile);
     if(!correctFile.open(QIODevice::ReadOnly))
     {
         qDebug() << "Can't open correct file!";
@@ -209,6 +204,7 @@ void logRemake::readDataFromFile()
         dataFromFile.insert(cords.at(m).second - 1, correctData.at(fileNumber));
         ++cnt;
     }
+    cords.clear();
 
     //output file
     QFile outputFile(m_strPathToSaveFile + "/" + QFileInfo(m_strFilePath).fileName());
@@ -285,10 +281,10 @@ logParser::logParser(QWidget *parent) : QDialog(parent)
 
     m_pItemsLayout = new QVBoxLayout();
     //labels
-    m_pLblInfo = new QLabel("                                    Instruction\n"
-                            "1) Create directory goodLogs in same directory where app\n"
-                            "2) Place logs with good data to goodLogs directory\n"
-                            "3) Press CREATE button");
+    m_pLblInfo = new QLabel("                                    INSTRUCTION\n\n"
+                            "1) Create directory goodLogs in same directory where app\n\n"
+                            "2) Place logs with good data to goodLogs directory\n\n"
+                            "3) Press CREATE button\n\n");
     m_pLblStatus = new QLabel("Status: ");
 
     //buttons
