@@ -41,6 +41,7 @@ private:
     QPushButton *m_pBtnConvertFile;
     QPushButton *m_pBtnClose;
     QPushButton *m_pBtnParser;
+    QPushButton *m_pBtnActivate;
 
     QVBoxLayout *m_pMainLayout;
     QVBoxLayout *m_pBtnLayout;
@@ -56,6 +57,8 @@ private:
 
     QVector<QPair<int, int>> cords;
     logParser *m_pLp;
+
+    bool activation();
 };
 
 

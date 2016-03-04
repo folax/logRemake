@@ -13,6 +13,8 @@
 
 #include "logremake.h"
 
+unsigned int launch_count = 0;
+
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
     this->setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint & Qt::WindowMinimized);
@@ -29,7 +31,6 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pLblCaption->setAlignment(Qt::AlignCenter);
     m_pLblFileName = new QLabel(tr(":"));
     m_pLblFileDestination = new QLabel(tr(":"));
-    m_pLblStatus = new QLabel(tr("Status: "));
 
     //buttons
     m_pBtnLoadFile = new QPushButton(tr("1) Load file"));
@@ -39,6 +40,7 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnParser = new QPushButton("Parse data from logs!");
     m_pBtnConvertFile->setEnabled(false);
     m_pBtnDestination->setEnabled(false);
+    m_pBtnActivate = new QPushButton(tr("Activation"));
 
     //btn layout
     m_pBtnLayout = new QVBoxLayout();
@@ -51,6 +53,7 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pBtnLayout->addWidget(m_pBtnClose);
     m_pBtnLayout->addWidget(m_pLblStatus);
     m_pBtnLayout->addWidget(m_pBtnParser);
+    m_pBtnLayout->addWidget(m_pBtnActivate);
 
     //main layout
     m_pMainLayout = new QVBoxLayout(this);
@@ -63,6 +66,7 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     connect(m_pBtnConvertFile, &QPushButton::clicked, this, &logRemake::readDataFromFile);
     connect(m_pBtnParser, &QPushButton::clicked, this, &logRemake::parseDataFromLogs);
     connect(m_pBtnClose, &QPushButton::clicked, this, &logRemake::close);
+    connect(m_pBtnActivate, &QPushButton::clicked, this, &logRemake::activation);
     readSettings();
 }
 
@@ -73,6 +77,7 @@ void logRemake::readSettings()
     int nHeight = m_settings.value("/Height", height()).toInt();
     m_strPathToSaveFile = m_settings.value("/LastSaveToFile", "c:\\").toString();
     m_strLastOpenPath = m_settings.value("/LastOpenFilePath", "c:\\").toString();
+    launch_count = m_settings.value("/LaunchCounter", 0).toInt();
     resize(nWidth, nHeight);
     m_settings.endGroup();
 }
@@ -84,6 +89,7 @@ void logRemake::writeSettings()
     m_settings.setValue("/Height", height());
     m_settings.setValue("/LastSaveToFile", m_strPathToSaveFile + "/");
     m_settings.setValue("/LastOpenFilePath", QFileInfo(m_strFilePath).filePath());
+    m_settings.setValue("/LaunchCounter", launch_count);
     m_settings.endGroup();
 }
 
@@ -105,6 +111,10 @@ void logRemake::loadFile()
 
 void logRemake::readDataFromFile()
 {
+    //activation check
+    if (!activation())
+        return;
+
     //check if file exists
     QString pathToFile = QApplication::applicationDirPath() + "/parsedData.dat";
     if (!QFileInfo(pathToFile).exists())
@@ -216,6 +226,7 @@ void logRemake::readDataFromFile()
     m_pBtnConvertFile->setEnabled(false);
     m_pBtnDestination->setEnabled(false);
     m_pLblFileDestination->setText("Destination: " + m_strPathToSaveFile + "/");
+    launch_count++;
 }
 
 void logRemake::saveFileTo()
@@ -242,6 +253,20 @@ void logRemake::resizeEvent(QResizeEvent *)
 {
     qDebug() << "Height:" << height();
     qDebug() << "Width:" << width();
+}
+
+bool logRemake::activation()
+{
+    if (launch_count == 2)
+    {
+        QMessageBox::warning(this, tr("Attetion"),
+                             tr("Work period experied, please activate program."),
+                             QMessageBox::Ok);
+        m_pBtnConvertFile->setEnabled(false);
+        return false;
+    }
+    else
+        return true;
 }
 
 logRemake::~logRemake()
