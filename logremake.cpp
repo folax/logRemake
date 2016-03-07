@@ -10,10 +10,12 @@
 #include <QDir>
 #include <QMessageBox>
 #include <algorithm>
+#include <QInputDialog>
 
 #include "logremake.h"
 
 unsigned int launch_count = 0;
+bool activated = false;
 
 logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "logRemake")
 {
@@ -31,6 +33,7 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     m_pLblCaption->setAlignment(Qt::AlignCenter);
     m_pLblFileName = new QLabel(tr(":"));
     m_pLblFileDestination = new QLabel(tr(":"));
+    m_pLblStatus = new QLabel(tr("Status: "));
 
     //buttons
     m_pBtnLoadFile = new QPushButton(tr("1) Load file"));
@@ -68,6 +71,8 @@ logRemake::logRemake(QWidget *parent) : QDialog(parent), m_settings("Decay", "lo
     connect(m_pBtnClose, &QPushButton::clicked, this, &logRemake::close);
     connect(m_pBtnActivate, &QPushButton::clicked, this, &logRemake::activation);
     readSettings();
+    if (activated)
+        m_pBtnActivate->setVisible(false);
 }
 
 void logRemake::readSettings()
@@ -78,6 +83,7 @@ void logRemake::readSettings()
     m_strPathToSaveFile = m_settings.value("/LastSaveToFile", "c:\\").toString();
     m_strLastOpenPath = m_settings.value("/LastOpenFilePath", "c:\\").toString();
     launch_count = m_settings.value("/LaunchCounter", 0).toInt();
+    activated = m_settings.value("/Activation", false).toBool();
     resize(nWidth, nHeight);
     m_settings.endGroup();
 }
@@ -90,6 +96,7 @@ void logRemake::writeSettings()
     m_settings.setValue("/LastSaveToFile", m_strPathToSaveFile + "/");
     m_settings.setValue("/LastOpenFilePath", QFileInfo(m_strFilePath).filePath());
     m_settings.setValue("/LaunchCounter", launch_count);
+    m_settings.setValue("/Activation", activated);
     m_settings.endGroup();
 }
 
@@ -112,7 +119,7 @@ void logRemake::loadFile()
 void logRemake::readDataFromFile()
 {
     //activation check
-    if (!activation())
+    if (!activation() || !activated)
         return;
 
     //check if file exists
@@ -257,21 +264,54 @@ void logRemake::resizeEvent(QResizeEvent *)
 
 bool logRemake::activation()
 {
-    if (launch_count == 2)
+    QPushButton *btn = qobject_cast<QPushButton*>(sender());
+
+    if(btn->text() == "3) Convert file")
     {
-        QMessageBox::warning(this, tr("Attetion"),
-                             tr("Work period experied, please activate program."),
-                             QMessageBox::Ok);
-        m_pBtnConvertFile->setEnabled(false);
-        return false;
+        if (launch_count == 20)
+        {
+            QMessageBox::warning(this, tr("Attention"),
+                                 tr("Work period experied, please activate program."),
+                                 QMessageBox::Ok);
+            m_pBtnConvertFile->setEnabled(false);
+            return false;
+        }
+        else
+            return true;
     }
-    else
-        return true;
+
+    if(btn->text() == "Activation")
+    {
+        bool ok;
+        QString text = QInputDialog::getText(this, tr("Activation"),
+                                             tr("Enter serial number:"), QLineEdit::Normal,
+                                             "", &ok);
+        if (ok && text == "lLWl4R7IauZblYL9w1C4")
+        {
+            QMessageBox::information(this, tr("Activation"),
+                                     tr("Activation complete!"),
+                                     QMessageBox::Ok);
+            m_pBtnActivate->setVisible(false);
+            activated = true;
+            return true;
+        }
+        else if (!ok)
+            return false;
+        else
+        {
+            QMessageBox::information(this, tr("Activation"),
+                                     tr("Invalid serial number!"),
+                                     QMessageBox::Ok);
+            return false;
+        }
+
+    }
+    return true;
 }
 
 logRemake::~logRemake()
 {
-
+    qDebug() << "Launch count: " << launch_count;
 }
 
 newStyle::newStyle() : QProxyStyle(QStyleFactory::create("Fusion"))

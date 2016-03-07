@@ -12,7 +12,6 @@ class QLabel;
 class logParser;
 class QCheckBox;
 
-
 //logRamake class
 class logRemake : public QDialog
 {
@@ -28,6 +27,9 @@ public slots:
     void readDataFromFile();
     void saveFileTo();
     void parseDataFromLogs();
+
+private slots:
+    bool activation();
 
 protected:
     void closeEvent(QCloseEvent *);
@@ -58,7 +60,6 @@ private:
     QVector<QPair<int, int>> cords;
     logParser *m_pLp;
 
-    bool activation();
 };
 
 
