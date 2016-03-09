@@ -119,8 +119,11 @@ void logRemake::loadFile()
 void logRemake::readDataFromFile()
 {
     //activation check
-    if (!activation() || !activated)
+    if (!activation())
+    {
+        qDebug() << "Activation block!";
         return;
+    }
 
     //check if file exists
     QString pathToFile = QApplication::applicationDirPath() + "/parsedData.dat";
@@ -264,6 +267,9 @@ void logRemake::resizeEvent(QResizeEvent *)
 
 bool logRemake::activation()
 {
+    if (activated)
+        return true;
+
     QPushButton *btn = qobject_cast<QPushButton*>(sender());
 
     if(btn->text() == "3) Convert file")
